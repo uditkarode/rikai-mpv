@@ -15,7 +15,7 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtCore import QUrl, QPoint, QRect
 from PyQt5.QtWidgets import QTextEdit, QFrame, QApplication
 
-from PyQt5.QtGui import QTextCursor, QFont, QPainter, QPen, QColor
+from PyQt5.QtGui import QTextCursor, QFont, QPainter, QPen, QColor, QCursor
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout
 
 import math
@@ -336,6 +336,11 @@ class TextWidget(QTextEdit):
         self.no_popup = True
         
     def mouseMoveEvent(self, event):
+        if not self.paused_by_us:
+            self.paused_by_us = True
+            self.previously_paused = mpv_pause_status()
+            mpv_pause()
+
         point_position = event.pos()  # this is relative coordinates in the QTextEdit
         char_index = self.document().documentLayout().hitTest(
             QPointF(point_position.x(), point_position.y()),
@@ -405,19 +410,19 @@ class TextWidget(QTextEdit):
                     pass
     
     def enterEvent(self, event):
-        # the case where this event is triggered several times has been encountered,
-        # hence the `self.already_in`
+        # Don't pause here — XWayland generates spurious enter events on
+        # geometry changes. Pausing is deferred to mouseMoveEvent instead.
         if not self.already_in:
             self.already_in = True
+            self.paused_by_us = False
             self.setUpdatesEnabled(True)
-            self.previously_paused = mpv_pause_status()
-            mpv_pause()
-        
+
         super().enterEvent(event)
     
     def leaveEvent(self, event):
-        if not self.previously_paused:
+        if self.paused_by_us and not self.previously_paused:
             mpv_resume()
+        self.paused_by_us = False
         
         self.already_in = False
         
