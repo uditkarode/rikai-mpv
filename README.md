@@ -57,7 +57,7 @@ On KDE (kwin), go to Compositor settings and uncheck "Allow applications to bloc
 
 ## Key bindings
 
-* `F5` start rikai-mpv. Starting may take several seconds.
+* `F5` start rikai-mpv. Starting may take several seconds. NOTE THAT THIS ONLY WORKS ON FULLSCREEN.
 * `F7` stop rikai-mpv
 * With the mouse on a subtitle, *left* click then `Ctrl + Alt + UP` / `Ctrl + Alt + DOWN` to zoom/dezoom the subtitles
 * With the mouse on a subtitle, *right* click then `Ctrl + Alt + UP` / `Ctrl + Alt + DOWN` to zoom/dezoom the popup
