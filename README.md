@@ -15,10 +15,10 @@ By default, rikai-mpv uses Noto Serif CJK JP Light font: https://www.google.com/
 
 Dependencies are:
 
-* Linux OS with X-based display
+* Linux OS (using Xorg or Wayland)
 * `python >=3.8.5`
 * `PyQt5 >=5.9.2`
-* `QtWebEngineWidgets` (likely installed with `pip install PyQtWebEngine`, see [here](https://stackoverflow.com/a/54947671/4370080))
+* `QtWebEngineWidgets` (likely installed with `pip install PyQtWebEngine`, see [here](https://stackoverflow.com/a/54947671/4370080) or `yay -S python-pyqt5-webengine` on Arch)
 * `node >=v14.16`
 * `typescript` (install with `npm install --global typescript`)
 * `yarn` (install with `npm install --global yarn`)
@@ -28,7 +28,7 @@ rikai-mpv may work with different versions, but has not been tested. A port into
 
 ## Install
 
-Currently, the script supports **Linux only**. It has not been tested for Wayland-based display and has been designed for X11. You can install as follow:
+Currently, the script supports **Linux only**. It works for Wayland-based display as well on this fork, but originally has been designed for X11. You can install as follow:
 
 Clone in your `mpv/scripts/` folder (the install will break elsewhere):
 
