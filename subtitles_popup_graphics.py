@@ -121,7 +121,8 @@ class Popup(QtWebEngineWidgets.QWebEngineView):
         
         self.setWindowFlags(Qt.X11BypassWindowManagerHint)
         
-        self.zoom_rate = parent.parent.config.default_zoom_popup
+        self.dpr = parent.parent.config.dpr
+        self.zoom_rate = parent.parent.config.default_zoom_popup * self.dpr
         self.setZoomFactor(self.zoom_rate)
         
         self.html_path = os.path.join(os.path.expanduser('~/.config/mpv/scripts/'),
@@ -290,10 +291,10 @@ class TextWidget(QTextEdit):
         if self.already_in:  # it could be that we exited the subtitles before getting there
             # we need this to take into account the zoom setting previously set
             
-            width = self.popup.base_width * (self.parent.config.default_zoom_popup
-                                             + 0.05 * self.popup.zoom_timed) + 5
-            height = self.popup.base_height * (self.parent.config.default_zoom_popup
-                                               + 0.05 * self.popup.zoom_timed) + 5
+            dpr = self.parent.config.dpr
+            zoom = self.parent.config.default_zoom_popup * dpr + 0.05 * self.popup.zoom_timed
+            width = self.popup.base_width * zoom + 5
+            height = self.popup.base_height * zoom + 5
             
             # the pop up is shown above the subtitles, and it should not excess the
             # available space there, namely `self.pos_parent.y()`
@@ -691,13 +692,18 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     screen = app.screens()[config.n_screen]
-    dpr = screen.devicePixelRatio()
-    config.screen_width = int(screen.size().width() / dpr)
-    config.screen_height = int(screen.size().height() / dpr)
-    config.x_screen = int(screen.geometry().x() / dpr)
-    config.y_screen = int(screen.geometry().y() / dpr)
+    config.dpr = screen.logicalDotsPerInch() / 96.0
+    if config.dpr < 1.01:
+        config.dpr = 1.0
+    config.screen_width = screen.size().width()
+    config.screen_height = screen.size().height()
+    config.x_screen = screen.geometry().x()
+    config.y_screen = screen.geometry().y()
 
-    print(f"[rikai-mpv] n_screen={config.n_screen}, screens={len(app.screens())}, dpr={dpr}")
+    print(f"[rikai-mpv] n_screen={config.n_screen}, screens={len(app.screens())}, dpr={config.dpr}")
+    print(f"[rikai-mpv] screen_width={config.screen_width}, screen_height={config.screen_height}")
+    print(f"[rikai-mpv] x_screen={config.x_screen}, y_screen={config.y_screen}")
+    print(f"[rikai-mpv] fullscreen={mpv_fullscreen_status()}")
     print(f"[rikai-mpv] screen_width={config.screen_width}, screen_height={config.screen_height}")
     print(f"[rikai-mpv] x_screen={config.x_screen}, y_screen={config.y_screen}")
     print(f"[rikai-mpv] fullscreen={mpv_fullscreen_status()}")
