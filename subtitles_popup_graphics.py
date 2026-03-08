@@ -24,6 +24,8 @@ import socket
 
 import warnings
 
+os.environ['QT_QPA_PLATFORM'] = 'xcb'
+
 pth = os.path.expanduser('~/.config/mpv/scripts/')
 os.chdir(pth)
 import rikai_config as config
@@ -187,10 +189,11 @@ class TextWidget(QTextEdit):
         
         self.setAlignment(Qt.AlignVCenter)
         
-        self.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
+        self.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         
         self.document().setDocumentMargin(0)
         self.setContentsMargins(0, 0, 0, 0)
+        self.setFrameShape(QFrame.NoFrame)
         
         self.verticalScrollBar().setEnabled(False)
         self.horizontalScrollBar().setEnabled(False)
@@ -465,22 +468,6 @@ class TextWidget(QTextEdit):
         # Showing the outline is really slow (at times, more than 100 ms) and
         # we do not want to do it when the user shows popups, as it slows everything down.
         # Ideally, it could probably be in a separate thread.
-        if not self.already_in:
-            painter = QPainter(self.viewport())
-            
-            my_cursor = self.textCursor()
-            my_char_format = my_cursor.charFormat()
-            
-            my_char_format.setTextOutline(self.outline_pen)
-            
-            my_cursor.select(QTextCursor.SelectionType.Document)
-            my_cursor.mergeCharFormat(my_char_format)
-            
-            self.document().drawContents(painter)
-            
-            my_char_format.setTextOutline(self.transparent_pen)
-            my_cursor.mergeCharFormat(my_char_format)
-        
         super().paintEvent(event)
         
     # wheel events are unfortunately captured by the QTextEdit, but should be redirected
@@ -581,24 +568,30 @@ class ParentFrame(QFrame):
                                     Qt.AlignCenter,
                                     line).width()
                                 + 4)
-        
-        height_subtext = self.subtext.fontMetrics().height() * self.subtext.n_lines + 4
-        
+
+        # cap width to 90% of screen so long lines wrap
+        max_width = int(self.config.screen_width * 0.9)
+        width_subtext = min(width_subtext, max_width)
+
+        # set text first, then measure actual height after wrapping
+        self.subtext.setFixedWidth(width_subtext)
+        for line in self.subtext.text_splitted:
+            self.subtext.append(line)
+
+        height_subtext = int(self.subtext.document().size().height()) + 4
+
         width = width_subtext
         height = height_subtext + self.stretch_pixels
-        
+
         x = (self.config.screen_width / 2) - (width / 2)
         y = self.config.screen_height - height - config.bottom_spacing_pixels
-        
+
         self.setGeometry(config.x_screen + int(x),
                          config.y_screen + int(y),
                          width, height)
-        
+
         self.subtext.setGeometry(0, self.stretch_pixels // 2,
                                  width_subtext, height_subtext)
-        
-        for line in self.subtext.text_splitted:
-            self.subtext.append(line)
         
         self.subtext.pos_parent = self.pos()
         
@@ -697,11 +690,18 @@ if __name__ == "__main__":
     
     app = QApplication(sys.argv)
     
-    config.screen_width = app.screens()[config.n_screen].size().width()
-    config.screen_height = app.screens()[config.n_screen].size().height()
-    config.x_screen = app.screens()[config.n_screen].geometry().x()
-    config.y_screen = app.screens()[config.n_screen].geometry().y()
-    
+    screen = app.screens()[config.n_screen]
+    dpr = screen.devicePixelRatio()
+    config.screen_width = int(screen.size().width() / dpr)
+    config.screen_height = int(screen.size().height() / dpr)
+    config.x_screen = int(screen.geometry().x() / dpr)
+    config.y_screen = int(screen.geometry().y() / dpr)
+
+    print(f"[rikai-mpv] n_screen={config.n_screen}, screens={len(app.screens())}, dpr={dpr}")
+    print(f"[rikai-mpv] screen_width={config.screen_width}, screen_height={config.screen_height}")
+    print(f"[rikai-mpv] x_screen={config.x_screen}, y_screen={config.y_screen}")
+    print(f"[rikai-mpv] fullscreen={mpv_fullscreen_status()}")
+
     form = ParentFrame(config)
     form.show()
     app.exec_()
